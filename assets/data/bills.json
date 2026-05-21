@@ -1,0 +1,93 @@
+[
+  {
+    "id": 1,
+    "title": "Netflix Subscription",
+    "category": "Subscription",
+    "amount": 450,
+    "currency": "ETB",
+    "dueDate": "2026-05-20",
+    "remindBeforeDays": 3,
+    "status": "unpaid",
+    "provider": "Netflix",
+    "canPayOnline": true,
+    "notify": true
+  },
+  {
+    "id": 2,
+    "title": "Spotify Premium",
+    "category": "Subscription",
+    "amount": 250,
+    "currency": "ETB",
+    "dueDate": "2026-05-25",
+    "remindBeforeDays": 2,
+    "status": "paid",
+    "provider": "Spotify",
+    "canPayOnline": true,
+    "notify": true
+  },
+  {
+    "id": 3,
+    "title": "Electricity Bill (EEU)",
+    "category": "Utility",
+    "amount": 780,
+    "currency": "ETB",
+    "dueDate": "2026-05-18",
+    "remindBeforeDays": 1,
+    "status": "unpaid",
+    "provider": "EEU",
+    "canPayOnline": false,
+    "notify": true
+  },
+  {
+    "id": 4,
+    "title": "Water Bill",
+    "category": "Utility",
+    "amount": 320,
+    "currency": "ETB",
+    "dueDate": "2026-05-22",
+    "remindBeforeDays": 2,
+    "status": "unpaid",
+    "provider": "Water Supply Agency",
+    "canPayOnline": false,
+    "notify": true
+  },
+  {
+    "id": 5,
+    "title": "Home Rent",
+    "category": "Housing",
+    "amount": 8000,
+    "currency": "ETB",
+    "dueDate": "2026-06-01",
+    "remindBeforeDays": 5,
+    "status": "unpaid",
+    "provider": "Landlord",
+    "canPayOnline": false,
+    "notify": true
+  },
+  {
+    "id": 6,
+    "title": "School Fee",
+    "category": "Education",
+    "amount": 5000,
+    "currency": "ETB",
+    "dueDate": "2026-05-30",
+    "remindBeforeDays": 7,
+    "status": "unpaid",
+    "provider": "Local School",
+    "canPayOnline": false,
+    "notify": true
+  },
+  {
+    "id": 7,
+    "title": "Internet (Ethio Telecom)",
+    "category": "Utility",
+    "amount": 1200,
+    "currency": "ETB",
+    "dueDate": "2026-05-19",
+    "remindBeforeDays": 2,
+    "status": "unpaid",
+    "provider": "Ethio Telecom",
+    "canPayOnline": true,
+    "notify": true
+  }
+]
