@@ -99,31 +99,83 @@ class AppRouter {
         builder: (context, state, navigationShell) {
           return Scaffold(
             body: navigationShell,
-            bottomNavigationBar: BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              currentIndex: navigationShell.currentIndex,
-              onTap: (index) {
-                navigationShell.goBranch(index);
-              },
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.dashboard),
-                  label: "Overview",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.receipt_long),
-                  label: "Bills",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.subscriptions),
-                  label: "Subscriptions",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.payment),
-                  label: "Payments",
-                ),
-              ],
-            ),
+            // bottomNavigationBar: BottomNavigationBar(
+            //   type: BottomNavigationBarType.fixed,
+            //   currentIndex: navigationShell.currentIndex,
+            //   onTap: (index) {
+            //     navigationShell.goBranch(index);
+            //   },
+            //   items: const [
+            //     BottomNavigationBarItem(
+            //       icon: Icon(Icons.dashboard),
+            //       label: "Overview",
+            //     ),
+            //     BottomNavigationBarItem(
+            //       icon: Icon(Icons.receipt_long),
+            //       label: "Bills",
+            //     ),
+            //     BottomNavigationBarItem(
+            //       icon: Icon(Icons.subscriptions),
+            //       label: "Subscriptions",
+            //     ),
+            //     BottomNavigationBarItem(
+            //       icon: Icon(Icons.payment),
+            //       label: "Payments",
+            //     ),
+            //   ],
+            // ),
+         
+         bottomNavigationBar: Container(
+  decoration: const BoxDecoration(
+    color: Colors.white,
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black12,
+        blurRadius: 24,
+        offset: Offset(0, -2),
+      ),
+    ],
+  ),
+  child: SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _NavItem(
+            icon: Icons.dashboard_outlined,
+            activeIcon: Icons.dashboard,
+            label: "Overview",
+            isActive: navigationShell.currentIndex == 0,
+            onTap: () => navigationShell.goBranch(0),
+          ),
+          _NavItem(
+            icon: Icons.receipt_long_outlined,
+            activeIcon: Icons.receipt_long,
+            label: "Bills",
+            isActive: navigationShell.currentIndex == 1,
+            onTap: () => navigationShell.goBranch(1),
+          ),
+          _NavItem(
+            icon: Icons.subscriptions_outlined,
+            activeIcon: Icons.subscriptions,
+            label: "Subs",
+            isActive: navigationShell.currentIndex == 2,
+            onTap: () => navigationShell.goBranch(2),
+          ),
+          _NavItem(
+            icon: Icons.payment_outlined,
+            activeIcon: Icons.payment,
+            label: "Pay",
+            isActive: navigationShell.currentIndex == 3,
+            onTap: () => navigationShell.goBranch(3),
+          ),
+        ],
+      ),
+    ),
+  ),
+),
+         
           );
         },
 
@@ -229,4 +281,62 @@ class AppRouter {
       ),
     ],
   );
+  
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? const Color(0xFF2563EB) : const Color(0xFF94A3B8);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFFEEF2FF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                isActive ? activeIcon : icon,
+                key: ValueKey(isActive),
+                color: color,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

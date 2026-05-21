@@ -248,7 +248,8 @@ class _NotificationsPanelState extends State<NotificationsPanel> {
       onTap: () {
         if (!item.isRead) {
           // Trigger BLoC event to cleanly flip persistent data arrays
-          // blocContext.read<NotificationBloc>().add(MarkAsRead(id: item.id));
+          //  blocContext.read<NotificationBloc>().add(MarkAsRead(id: item.id));
+          context.read<NotificationBloc>().add(MarkAsRead(item.id));
         }
       },
       borderRadius: BorderRadius.circular(14),

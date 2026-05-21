@@ -1,3 +1,4 @@
+import 'package:bill_subscription_notifier/core/shared_components/settings_drawer/widgets/app_bars.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -66,15 +67,10 @@ class _BillPageState extends State<BillPage> {
             ..add(LoadBills()),
       child: Scaffold(
         backgroundColor: Colors.grey[50],
-        appBar: AppBar(
-          backgroundColor: brandNavy,
-          elevation: 0,
-          title: const Text(
-            "My Bills",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white),
-          ),
-          centerTitle: true,
-        ),
+        appBar: AppBars.primary(
+  title: "My Bills",
+  onBack: () => Navigator.pop(context),
+),
         body: Column(
           children: [
             // =====================================
