@@ -1,33 +1,19 @@
-import '../../domain/entities/notification_entity.dart';
-
 abstract class NotificationState {}
 
-// =========================
-// REST STATES
-// =========================
 class NotificationInitial extends NotificationState {}
 
 class NotificationLoading extends NotificationState {}
 
-class NotificationLoaded extends NotificationState {
-  final List<NotificationEntity> notifications;
-  NotificationLoaded(this.notifications);
-}
-
-// =========================
-// SOCKET STATES
-// =========================
 class SocketConnected extends NotificationState {}
 
 class NotificationReceived extends NotificationState {
   final dynamic data;
+
   NotificationReceived(this.data);
 }
 
-// =========================
-// ERROR
-// =========================
 class NotificationError extends NotificationState {
   final String message;
+
   NotificationError(this.message);
 }

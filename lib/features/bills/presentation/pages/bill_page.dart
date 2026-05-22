@@ -21,10 +21,18 @@ class BillPage extends StatefulWidget {
 
 class _BillPageState extends State<BillPage> {
   String selectedFilter = "all";
+  String searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
 
   // Brand Identity Theme Palette
-  final Color brandNavy = const Color(0xFF1A365D);
+  final Color brandNavy = const Color.fromARGB(255, 182, 191, 202);
   final Color brandTeal = const Color(0xFF008080);
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   // Status Chip Color Mapping
   Color _getStatusColor(String status) {
@@ -45,7 +53,6 @@ class _BillPageState extends State<BillPage> {
     if (input.isEmpty) return brandTeal;
     final int hash = input.hashCode;
     
-    // A clean selection of soft, modern material tones
     final List<Color> vibrantColors = [
       const Color(0xFF4F46E5), // Indigo
       const Color(0xFF0EA5E9), // Sky Blue
@@ -68,60 +75,105 @@ class _BillPageState extends State<BillPage> {
       child: Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: AppBars.primary(
-  title: "My Bills",
-  onBack: () => Navigator.pop(context),
-),
+          title: "My Bills",
+        ),
         body: Column(
           children: [
             // =====================================
-            // HORIZONTAL FILTER CHIP SLIDER BANNER
+            // WHITE FILTER & SEARCH HEADER BLOCK
             // =====================================
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               decoration: BoxDecoration(
-                color: brandNavy,
+                color: Colors.white,
                 borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  )
+                ],
               ),
               child: Builder(
                 builder: (blocContext) {
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: ["all", "paid", "unpaid", "upcoming"].map((filterKey) {
-                        final bool isSelected = selectedFilter == filterKey;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: ChoiceChip(
-                            label: Text(
-                              filterKey.SouthernCapitalize(), 
-                              style: TextStyle(
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                color: isSelected ? brandNavy : const Color(0xFFE2E8F0),
-                              ),
-                            ),
-                            selected: isSelected,
-                            selectedColor: Colors.white,
-                            backgroundColor: Colors.white.withOpacity(0.12),
-                            checkmarkColor: brandNavy,
-                            side: BorderSide.none,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            onSelected: (bool selected) {
-                              if (selected) {
-                                setState(() => selectedFilter = filterKey);
-                                blocContext.read<BillBloc>().add(FilterBills(type: filterKey));
-                              }
-                            },
+                  return Column(
+                    children: [
+                      // Modern Search Input Field
+                      TextField(
+                        controller: _searchController,
+                        onChanged: (value) {
+                          setState(() {
+                            searchQuery = value.toLowerCase();
+                          });
+                        },
+                        decoration: InputDecoration(
+                          hintText: "Search bills, organizations...",
+                          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                          prefixIcon: Icon(Icons.search, color: brandTeal, size: 22),
+                          suffixIcon: searchQuery.isNotEmpty
+                              ? GestureDetector(
+                                  onTap: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      searchQuery = "";
+                                    });
+                                  },
+                                  child: Icon(Icons.clear, color: Colors.grey[400], size: 20),
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
                           ),
-                        );
-                      }).toList(),
-                    ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // Horizontal filter chips slider
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: ["all", "paid", "unpaid", "upcoming"].map((filterKey) {
+                            final bool isSelected = selectedFilter == filterKey;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: ChoiceChip(
+                                label: Text(
+                                  filterKey.SouthernCapitalize(), 
+                                  style: TextStyle(
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: isSelected ? Colors.white : Colors.grey[700],
+                                  ),
+                                ),
+                                selected: isSelected,
+                                selectedColor: brandTeal,
+                                backgroundColor: Colors.grey[100],
+                                checkmarkColor: Colors.white,
+                                side: BorderSide.none,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                onSelected: (bool selected) {
+                                  if (selected) {
+                                    setState(() => selectedFilter = filterKey);
+                                    blocContext.read<BillBloc>().add(FilterBills(type: filterKey));
+                                  }
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   );
                 }
               ),
@@ -142,7 +194,7 @@ class _BillPageState extends State<BillPage> {
                     child: BlocBuilder<BillBloc, BillState>(
                       builder: (context, state) {
                         if (state is BillLoading) {
-                          return const Center(child: CircularProgressIndicator(color: Color(0xFF008080)));
+                          return Center(child: CircularProgressIndicator(color: brandTeal));
                         }
 
                         if (state is BillError) {
@@ -159,7 +211,14 @@ class _BillPageState extends State<BillPage> {
                         }
 
                         if (state is BillLoaded) {
-                          if (state.bills.isEmpty) {
+                          // Filter list items locally based on search query matching title or organization name
+                          final filteredBills = state.bills.where((bill) {
+                            final matchTitle = bill.title.toLowerCase().contains(searchQuery);
+                            final matchOrg = bill.organizationName.toLowerCase().contains(searchQuery);
+                            return matchTitle || matchOrg;
+                          }).toList();
+
+                          if (filteredBills.isEmpty) {
                             return ListView(
                               physics: const AlwaysScrollableScrollPhysics(),
                               children: [
@@ -171,7 +230,9 @@ class _BillPageState extends State<BillPage> {
                                       Icon(Icons.assignment_turned_in_outlined, size: 64, color: Colors.grey[300]),
                                       const SizedBox(height: 16),
                                       Text(
-                                        "No records found for '$selectedFilter'",
+                                        searchQuery.isNotEmpty 
+                                            ? "No matches found for '$searchQuery'"
+                                            : "No records found for '$selectedFilter'",
                                         style: TextStyle(color: Colors.grey[600], fontSize: 15),
                                       ),
                                     ],
@@ -184,13 +245,12 @@ class _BillPageState extends State<BillPage> {
                           return ListView.builder(
                             padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                             physics: const AlwaysScrollableScrollPhysics(),
-                            itemCount: state.bills.length,
+                            itemCount: filteredBills.length,
                             itemBuilder: (context, index) {
-                              final bill = state.bills[index];
+                              final bill = filteredBills[index];
                               final Color statusColor = _getStatusColor(bill.status);
                               final Color visualTone = _generateDynamicColor(bill.organizationName);
 
-                              // Extract safe fallback letter token
                               final String leadingLetter = bill.organizationName.isNotEmpty 
                                   ? bill.organizationName[0].toUpperCase() 
                                   : (bill.category.isNotEmpty ? bill.category[0].toUpperCase() : "?");
@@ -199,26 +259,24 @@ class _BillPageState extends State<BillPage> {
                                 margin: const EdgeInsets.only(bottom: 12),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.03),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 3),
+                                      color: Colors.black.withOpacity(0.02),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
                                 child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  
-                                  // Highly beautiful dynamic dynamic color circle avatars
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                                   leading: Container(
                                     width: 46,
                                     height: 46,
                                     decoration: BoxDecoration(
-                                      color: visualTone.withOpacity(0.12),
+                                      color: visualTone.withOpacity(0.1),
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: visualTone.withOpacity(0.2), width: 1),
+                                      border: Border.all(color: visualTone.withOpacity(0.15), width: 1),
                                     ),
                                     child: Center(
                                       child: Text(
@@ -241,7 +299,7 @@ class _BillPageState extends State<BillPage> {
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
-                                            color: brandNavy,
+                                            color: Colors.blueGrey[800], // Increased contrast over brandNavy
                                           ),
                                         ),
                                       ),
@@ -261,16 +319,16 @@ class _BillPageState extends State<BillPage> {
                                           "${bill.organizationName} • ${bill.category}",
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(color: Colors.grey[700], fontSize: 13, fontWeight: FontWeight.w500),
+                                          style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w500),
                                         ),
-                                        const SizedBox(height: 3),
+                                        const SizedBox(height: 4),
                                         Row(
                                           children: [
-                                            Icon(Icons.calendar_today_outlined, size: 12, color: Colors.grey[500]),
+                                            Icon(Icons.calendar_today_outlined, size: 12, color: Colors.grey[400]),
                                             const SizedBox(width: 4),
                                             Text(
                                               "Due: ${bill.dueDate.toLocal().toString().split(' ')[0]}",
-                                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                              style: TextStyle(color: Colors.grey[500], fontSize: 12),
                                             ),
                                           ],
                                         ),
@@ -286,15 +344,15 @@ class _BillPageState extends State<BillPage> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 15,
-                                          color: brandNavy,
+                                          color: Colors.blueGrey[800], // Increased contrast over brandNavy
                                         ),
                                       ),
                                       const SizedBox(height: 6),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
-                                          color: statusColor.withOpacity(0.12),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: statusColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(6),
                                         ),
                                         child: Text(
                                           bill.status.toUpperCase(),

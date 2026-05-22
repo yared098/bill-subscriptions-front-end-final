@@ -1,3 +1,4 @@
+import 'package:bill_subscription_notifier/core/network/socket/socket_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -7,24 +8,45 @@ import '../../domain/usecases/mark_notification_as_read.dart';
 import '../../data/repositories/notification_repository_impl.dart';
 import '../../data/datasources/notification_remote_datasource.dart';
 
+import '../../data/datasources/socket_datasource.dart';
+import '../../data/repositories/socket_repository_impl.dart';
+
 import '../bloc/notification_bloc.dart';
 import '../bloc/notification_event.dart';
 import '../bloc/notification_state.dart';
+
 class NotificationPage extends StatelessWidget {
   final String token;
+  final String userId;
 
-  const NotificationPage({super.key, required this.token});
+  const NotificationPage({
+    super.key,
+    required this.token,
+    required this.userId,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // =========================
+    // API LAYER
+    // =========================
     final remote = NotificationRemoteDataSource();
     final repo = NotificationRepositoryImpl(remote);
+
+    // =========================
+    // SOCKET LAYER (NEW)
+    // =========================
+final socketService = SocketService();
+final socketRepo = SocketRepositoryImpl(socketService);
 
     return BlocProvider(
       create: (_) => NotificationBloc(
         GetNotifications(repo),
         MarkNotificationAsRead(repo),
-      )..add(LoadNotifications()),
+        socketRepo, // ✅ FIXED HERE
+      )
+        ..add(LoadNotifications())
+        ..add(StartSocketEvent(userId)), // 🔥 AUTO START SOCKET
 
       child: Scaffold(
         appBar: AppBar(title: const Text("Notifications")),
@@ -59,7 +81,6 @@ class NotificationPage extends StatelessWidget {
                           : Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(12),
                     ),
-
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor:
@@ -71,16 +92,13 @@ class NotificationPage extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-
                       title: Text(
                         n.title,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
                       subtitle: Text(n.message),
-
                       trailing: n.isRead
                           ? const Text(
                               "Read",
@@ -90,7 +108,7 @@ class NotificationPage extends StatelessWidget {
                               icon: const Icon(Icons.mark_email_read),
                               onPressed: () {
                                 context.read<NotificationBloc>().add(
-                                      MarkAsRead( n.id),
+                                      MarkAsRead(n.id),
                                     );
                               },
                             ),

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:bill_subscription_notifier/core/shared_components/settings_drawer/pages/ExpenseMonthlyAnalysisPage.dart';
 import 'package:bill_subscription_notifier/core/shared_components/settings_drawer/pages/UtilitiesManagementPage.dart';
 import 'package:bill_subscription_notifier/core/shared_components/settings_drawer/widgets/LeftNavigationSidebar.dart';
@@ -8,6 +10,7 @@ import 'package:bill_subscription_notifier/core/shared_components/settings_drawe
 import 'package:bill_subscription_notifier/core/shared_components/settings_drawer/widgets/notificationlists.dart';
 import 'package:bill_subscription_notifier/core/shared_components/settings_drawer/widgets/total_expense_card.dart';
 import 'package:bill_subscription_notifier/features/auth/core/session/session_manager.dart';
+import 'package:bill_subscription_notifier/features/auth/domain/entities/user_entity.dart';
 import 'package:bill_subscription_notifier/features/bills/data/models/bill_model.dart';
 import 'package:bill_subscription_notifier/features/bills/presentation/bloc/bill_bloc.dart';
 import 'package:bill_subscription_notifier/features/bills/presentation/bloc/bill_event.dart';
@@ -19,6 +22,9 @@ import 'package:bill_subscription_notifier/features/subscriptions/presentation/b
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../widgets/settings_drawer_panel.dart';
 
 import '../widgets/settings_drawer_panel.dart';
 
@@ -35,15 +41,44 @@ class _FinancialOverviewPageState extends State<FinancialOverviewPage> {
 
   List<BillModel> bills = [];
   List<SubscriptionModel> subscriptions = [];
+  UserEntity? currentUser;
+
+  // Centralized method to load or refresh data
+  Future<void> _loadData() async {
+    context.read<BillBloc>().add(LoadBills());
+    context.read<SubscriptionBloc>().add(LoadSubscriptions());
+
+    // Optional: If you want the loading spinner to persist slightly for smooth UX,
+    // you can await a small delay or await state changes from your Blocs.
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+  // session_manager.dart
+static Future<UserEntity?> getUser() async {
+  final prefs = await SharedPreferences.getInstance();
+  final data = prefs.getString("user");
+
+  if (data == null) return null;
+
+  return UserEntity.fromJson(jsonDecode(data));
+}
 
   @override
   void initState() {
     super.initState();
-
-    context.read<BillBloc>().add(LoadBills());
-    context.read<SubscriptionBloc>().add(LoadSubscriptions());
-  
+    _loadData();
+    _init();
   }
+  Future<void> _init() async {
+  await _loadData();
+
+  final user = await SessionManager.getUser();
+
+  if (mounted) {
+    setState(() {
+      currentUser = user;
+    });
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -56,176 +91,167 @@ class _FinancialOverviewPageState extends State<FinancialOverviewPage> {
         return Scaffold(
           backgroundColor: const Color(0xFFF9FAFB),
           appBar: PreferredSize(
-  preferredSize: const Size.fromHeight(72),
-  child: AppBar(
-    backgroundColor: const Color(0xFFF9FAFB),
-    elevation: 0,
-    surfaceTintColor: Colors.transparent,
-    automaticallyImplyLeading: false,
-    titleSpacing: 0,
-    title: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          // Mobile menu button
-          if (isMobile)
-  Builder(
-    builder: (innerContext) => IconButton(
-      icon: const Icon(
-        Icons.menu_rounded,
-        color: Color(0xFF1E1E24),
-      ),
-      onPressed: () {
-        Scaffold.of(innerContext).openDrawer();
-      },
-    ),
-  ),
-          if (isMobile) const SizedBox(width: 8),
+            preferredSize: const Size.fromHeight(72),
+            child: AppBar(
+              backgroundColor: const Color(0xFFF9FAFB),
+              elevation: 0,
+              surfaceTintColor: Colors.transparent,
+              automaticallyImplyLeading: false,
+              titleSpacing: 0,
+              title: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    // Mobile menu button
+                    if (isMobile)
+                      Builder(
+                        builder: (innerContext) => IconButton(
+                          icon: const Icon(
+                            Icons.menu_rounded,
+                            color: Color(0xFF1E1E24),
+                          ),
+                          onPressed: () {
+                            Scaffold.of(innerContext).openDrawer();
+                          },
+                        ),
+                      ),
+                    if (isMobile) const SizedBox(width: 8),
 
-          // TEXT SECTION (your converted header)
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Dashboard',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E1E24),
-                    letterSpacing: -0.5,
-                  ),
+                    // TEXT SECTION (your converted header)
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Dashboard',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E1E24),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Track your bills & subscriptions',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // RIGHT ACTIONS
+                    Row(
+                      children: [
+                        Stack(
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.notifications_none_rounded,
+                                color: Color(0xFF4B5563),
+                              ),
+                              onPressed: () => openNotificationsPanel(
+                                context,
+                                bills: bills,
+                                subscriptions: subscriptions,
+                              ),
+                            ),
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Text(
+                                  '3',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        IconButton(
+                          icon: Icon(
+                            _isSettingsOpen
+                                ? Icons.settings_rounded
+                                : Icons.settings_outlined,
+                            color: const Color(0xFF4B5563),
+                          ),
+                          onPressed: () {
+                            final isMobileLayout =
+                                MediaQuery.of(context).size.width < 750;
+
+                            if (isMobileLayout) {
+                              _showMobileSettingsBottomSheet();
+                            } else {
+                              setState(
+                                () => _isSettingsOpen = !_isSettingsOpen,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Track your bills & subscriptions',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
 
-          // RIGHT ACTIONS
-          Row(
-            children: [
-              Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.notifications_none_rounded,
-                      color: Color(0xFF4B5563),
-                    ),
-                    onPressed: () => openNotificationsPanel(
-                      context,
-                      bills: bills,
-                      subscriptions: subscriptions,
-                    ),
-                  ),
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Text(
-                        '3',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(width: 8),
-
-              IconButton(
-                icon: Icon(
-                  _isSettingsOpen
-                      ? Icons.settings_rounded
-                      : Icons.settings_outlined,
-                  color: const Color(0xFF4B5563),
-                ),
-                onPressed: () {
-                  final isMobileLayout =
-                      MediaQuery.of(context).size.width < 750;
-
-                  if (isMobileLayout) {
-                    _showMobileSettingsBottomSheet();
-                  } else {
-                    setState(() => _isSettingsOpen = !_isSettingsOpen);
-                  }
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-  ),
-),
-
-          // 1. MOBILE RESPONSIVE SIDEBAR: Attach left side menu dynamically as drawer on mobile viewports
+          // 1. MOBILE RESPONSIVE SIDEBAR
           drawer: isMobile
               ? Drawer(
                   child: LeftNavigationSidebar(
                     activeRouteName: _currentSelectedRoute,
                     isMobileDrawer: true,
-                    // onRouteSelected: (route) {
-                    //   setState(() => _currentSelectedRoute = route);
-                    //   Navigator.pop(context); // close drawer layer
-                    // },
                   ),
                 )
               : null,
 
           body: Row(
             children: [
-              // 2. WIDESCREEN SIDEBAR: Stays locked open as an embedded column interface element on large viewports
+              // 2. WIDESCREEN SIDEBAR
               if (!isMobile)
-                LeftNavigationSidebar(
-                  activeRouteName: _currentSelectedRoute,
-                  // onRouteSelected: (route) {
-                  //   setState(() => _currentSelectedRoute = route);
-                  // },
-                ),
+                LeftNavigationSidebar(activeRouteName: _currentSelectedRoute),
 
               if (!isMobile)
                 const VerticalDivider(width: 1, color: Color(0xFFE5E7EB)),
 
               // Main Application Dashboard Content Board Arena
               Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.all(isMobile ? 18.0 : 32.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // _buildHeaderSection(isMobile),
-                      // const SizedBox(height: 24),
-
-                      const TotalExpenseCard(
-                        // totalExpense: 'ETB 8,450.75',
-                        // billCount: 12,
-                        // subscriptionCount: 7,
-                      ),
-                      const SizedBox(height: 24),
-
-                      _buildResponsiveMetricGrid(isMobile || isTablet),
-                      const SizedBox(height: 24),
-
-                      _buildResponsiveSectionsGrid(isMobile || isTablet),
-                    ],
+                child: RefreshIndicator(
+                  color: const Color(
+                    0xFF1E1E24,
+                  ), // Match your dashboard theme color
+                  onRefresh: _loadData, // Triggers block reloads
+                  child: SingleChildScrollView(
+                    // physics must be set to AlwaysScrollableScrollPhysics for refresh mechanics to work
+                    // even if your widgets fit exactly inside the screen container layout.
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    padding: EdgeInsets.all(isMobile ? 18.0 : 32.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const TotalExpenseCard(),
+                        const SizedBox(height: 24),
+                        _buildResponsiveMetricGrid(isMobile || isTablet),
+                        const SizedBox(height: 24),
+                        // _buildResponsiveSectionsGrid(isMobile || isTablet),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -244,15 +270,9 @@ class _FinancialOverviewPageState extends State<FinancialOverviewPage> {
                         'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
                     onClose: () => setState(() => _isSettingsOpen = false),
                     onLogout: () async {
-                      // 1. Clear user data and authentication JWT token from SharedPreferences
                       await SessionManager.logout();
-
                       if (!context.mounted) return;
-
-                      // 2. Close the open slide-out settings panel first
                       Navigator.of(context).pop();
-
-                      // 3. Purge the route stack and kick the user out back to the Login Page
                       context.go('/login');
                     },
                   ),
@@ -262,111 +282,6 @@ class _FinancialOverviewPageState extends State<FinancialOverviewPage> {
           ),
         );
       },
-    );
-  }
-
-  // Header element render logic wrapping dynamic icon actions
-  Widget _buildHeaderSection(bool isMobile) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        if (isMobile) ...[
-          Builder(
-            builder: (innerContext) => IconButton(
-              icon: const Icon(
-                Icons.menu_rounded,
-                color: Color(0xFF1E1E24),
-                size: 26,
-              ),
-              onPressed: () => Scaffold.of(innerContext).openDrawer(),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                ' Dashboard',
-                style: TextStyle(
-                  fontSize: isMobile ? 22 : 26,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E1E24),
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Track your bills & subscriptions',
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: isMobile ? 12 : 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        Row(
-          children: [
-            Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.notifications_none_rounded,
-                    color: Color(0xFF4B5563),
-                  ),
-                  onPressed: () => openNotificationsPanel(
-                    context,
-                    bills: bills,
-                    subscriptions: subscriptions,
-                  ),
-                ),
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Text(
-                      '3',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: Icon(
-                _isSettingsOpen
-                    ? Icons.settings_rounded
-                    : Icons.settings_outlined,
-                color: _isSettingsOpen
-                    ? const Color(0xFF2563EB)
-                    : const Color(0xFF4B5563),
-              ),
-              onPressed: () {
-                final isMobileLayout = MediaQuery.of(context).size.width < 750;
-                if (isMobileLayout) {
-                  _showMobileSettingsBottomSheet();
-                } else {
-                  setState(() => _isSettingsOpen = !_isSettingsOpen);
-                }
-              },
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -404,25 +319,22 @@ class _FinancialOverviewPageState extends State<FinancialOverviewPage> {
     );
   }
 
-
-Widget _buildResponsiveMetricGrid(bool useCondensedGrid) {
+ Widget _buildResponsiveMetricGrid(bool useCondensedGrid) {
   return BlocBuilder<BillBloc, BillState>(
     builder: (context, billState) {
       return BlocBuilder<SubscriptionBloc, SubscriptionState>(
         builder: (context, subState) {
-          
-          // ================= SAFE DATA EXTRACTION =================
-          final bills = billState is BillLoaded
-              ? billState.bills
-              : <BillModel>[];
+          // ================= SAFE DATA PIPELINE =================
+          final bills = billState is BillLoaded ? billState.bills : [];
+          final subscriptions = subState is SubscriptionLoaded ? subState.subscriptions : [];
 
-          final subscriptions = subState is SubscriptionLoaded
-              ? subState.subscriptions
-              : <SubscriptionModel>[];
+          // ================= BUSINESS LOGIC UTILS =================
+          bool isUnpaid(String status) {
+            final s = status.toLowerCase().trim();
+            return s == 'unpaid' || s == 'pending';
+          }
 
-          // ================= BUSINESS LOGIC =================
-          final unpaidBillsList =
-              bills.where((b) => b.status == 'Unpaid').toList();
+          final unpaidBillsList = bills.where((b) => isUnpaid(b.status)).toList();
 
           final totalUnpaidAmount = unpaidBillsList.fold<double>(
             0,
@@ -434,183 +346,135 @@ Widget _buildResponsiveMetricGrid(bool useCondensedGrid) {
             (sum, item) => sum + item.amount,
           );
 
-          // ================= UI CARDS =================
-          final List<Widget> metrics = [
-            MetricSummaryCard(
-              icon: Icons.error_outline_rounded,
-              iconColor: const Color(0xFFEF4444),
-              iconBgColor: const Color(0xFFFEE2E2),
-              label: 'Unpaid Bills',
-              value: '${unpaidBillsList.length}',
-              footerText: 'View all',
-              footerColor: const Color(0xFFEF4444),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => FinancialItemsListPage(
-                      title: 'Unpaid Bills',
-                      totalLabel: 'Pending Volume Total',
-                      totalAmount:
-                          'ETB ${totalUnpaidAmount.toStringAsFixed(2)}',
-                      items: unpaidBillsList
-                          .map(
-                            (bill) => DashboardListItem(
-                              leadingWidget: const CircleAvatar(
-                                backgroundColor: Color(0xFFFEE2E2),
-                                child: Icon(
-                                  Icons.receipt_long_rounded,
-                                  color: Color(0xFFEF4444),
-                                  size: 18,
-                                ),
-                              ),
-                              title: bill.title,
-                              subtitle:
-                                  'Due: ${bill.dueDate.day}/${bill.dueDate.month}/${bill.dueDate.year}',
-                              amount:
-                                  'ETB ${bill.amount.toStringAsFixed(2)}',
-                              amountColor: const Color(0xFFEF4444),
-                            ),
-                          )
-                          .toList(),
+          // ================= CARD CONFIGURATION DATA OBJECTS =================
+          final List<Map<String, dynamic>> gridConfigs = [
+            {
+              'icon': Icons.error_outline_rounded,
+              'iconColor': const Color(0xFFEF4444),
+              'iconBgColor': const Color(0xFFFEE2E2),
+              'label': 'Unpaid Bills',
+              'value': '${unpaidBillsList.length}',
+              'footerText': 'View all',
+              'footerColor': const Color(0xFFEF4444),
+              'onTap': () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => FinancialItemsListPage(
+                        type: FinancialType.bills,
+                        title: 'Unpaid Bills',
+                        totalLabel: 'Pending Volume Total',
+                        totalAmount: 'ETB ${totalUnpaidAmount.toStringAsFixed(2)}',
+                      ),
                     ),
                   ),
-                );
-              },
-            ),
-
-            MetricSummaryCard(
-              icon: Icons.calendar_today_rounded,
-              iconColor: const Color(0xFF8B5CF6),
-              iconBgColor: const Color(0xFFEDE9FE),
-              label: 'Subscriptions',
-              value: '${subscriptions.length}',
-              footerText: 'View active plans',
-              footerColor: const Color(0xFF8B5CF6),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => FinancialItemsListPage(
-                      title: 'Active Subscriptions',
-                      totalLabel: 'Monthly Commitment',
-                      totalAmount:
-                          'ETB ${totalSubscriptionsAmount.toStringAsFixed(2)}',
-                      items: subscriptions
-                          .map(
-                            (sub) => DashboardListItem(
-                              leadingWidget: CircleAvatar(
-                                backgroundColor: const Color(0xFF0F172A),
-                                child: Text(
-                                  sub.name.isNotEmpty
-                                      ? sub.name.substring(0, 1)
-                                      : '?',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              title: sub.name,
-                              subtitle: 'Status: ${sub.status} • Monthly',
-                              amount:
-                                  'ETB ${sub.amount.toStringAsFixed(2)}',
-                              amountColor: const Color(0xFF8B5CF6),
-                            ),
-                          )
-                          .toList(),
+            },
+            {
+              'icon': Icons.calendar_today_rounded,
+              'iconColor': const Color(0xFF8B5CF6),
+              'iconBgColor': const Color(0xFFEDE9FE),
+              'label': 'Subscriptions',
+              'value': '${subscriptions.length}',
+              'footerText': 'View active plans',
+              'footerColor': const Color(0xFF8B5CF6),
+              'onTap': () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => FinancialItemsListPage(
+                        type: FinancialType.subscriptions,
+                        title: 'Active Subscriptions',
+                        totalLabel: 'Monthly Commitment',
+                        totalAmount: 'ETB ${totalSubscriptionsAmount.toStringAsFixed(2)}',
+                      ),
                     ),
                   ),
-                );
-              },
-            ),
-
-            MetricSummaryCard(
-              icon: Icons.trending_up_rounded,
-              iconColor: const Color(0xFF10B981),
-              iconBgColor: const Color(0xFFD1FAE5),
-              label: 'Average Expense',
-              value: 'ETB 3,210',
-              footerText: 'This month',
-              footerColor: const Color(0xFF10B981),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const ExpenseMonthlyAnalysisPage(),
+            },
+            {
+              'icon': Icons.trending_up_rounded,
+              'iconColor': const Color(0xFF10B981),
+              'iconBgColor': const Color(0xFFD1FAE5),
+              'label': 'Average Expense',
+              'value': 'ETB 3,210',
+              'footerText': 'This month',
+              'footerColor': const Color(0xFF10B981),
+              'onTap': () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ExpenseMonthlyAnalysisPage(),
+                    ),
                   ),
-                );
-              },
-            ),
-
-            MetricSummaryCard(
-              icon: Icons.grid_view_rounded,
-              iconColor: const Color(0xFF2563EB),
-              iconBgColor: const Color(0xFFDBEAFE),
-              label: 'Top Category',
-              value: 'Utilities',
-              footerText: 'View details',
-              footerColor: const Color(0xFF2563EB),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const UtilitiesManagementPage(),
+            },
+            {
+              'icon': Icons.grid_view_rounded,
+              'iconColor': const Color(0xFF2563EB),
+              'iconBgColor': const Color(0xFFDBEAFE),
+              'label': 'Top Category',
+              'value': 'Utilities',
+              'footerText': 'View details',
+              'footerColor': const Color(0xFF2563EB),
+              'onTap': () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const UtilitiesManagementPage(),
+                    ),
                   ),
-                );
-              },
-            ),
+            },
           ];
 
-          // ================= RESPONSIVE UI =================
-          double screenWidth = MediaQuery.of(context).size.width;
-
-          if (screenWidth < 520) {
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  children: metrics.map((card) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 14.0),
-                      child: SizedBox(
-                        width: screenWidth * 0.44,
-                        height: 142,
-                        child: card,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            );
-          }
+          // ================= RESPONSIVE LAYOUT ENGINE =================
+          final screenWidth = MediaQuery.of(context).size.width;
 
           int crossAxisCount;
-          if (screenWidth < 850) {
+          double spacing;
+          double aspectRatio;
+
+          if (screenWidth < 360) {
             crossAxisCount = 2;
+            spacing = 10.0;
+            aspectRatio = 0.98; // Adjusted slightly down to handle font scaling on narrow screens safely
+          } else if (screenWidth < 520) {
+            crossAxisCount = 2;
+            spacing = 12.0;
+            aspectRatio = 1.10;
+          } else if (screenWidth < 850) {
+            crossAxisCount = 2;
+            spacing = 16.0;
+            aspectRatio = 1.55;
           } else if (screenWidth < 1200) {
             crossAxisCount = 3;
+            spacing = 18.0;
+            aspectRatio = 1.45;
           } else {
             crossAxisCount = 4;
+            spacing = 20.0;
+            aspectRatio = 1.60;
           }
 
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: metrics.length,
+            itemCount: gridConfigs.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              mainAxisExtent: 142,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+              childAspectRatio: aspectRatio,
             ),
-            itemBuilder: (context, index) => metrics[index],
+            itemBuilder: (context, index) {
+              final config = gridConfigs[index];
+              return MetricSummaryCard(
+                icon: config['icon'] as IconData,
+                iconColor: config['iconColor'] as Color,
+                iconBgColor: config['iconBgColor'] as Color,
+                label: config['label'] as String,
+                value: config['value'] as String,
+                footerText: config['footerText'] as String,
+                footerColor: config['footerColor'] as Color,
+                onTap: config['onTap'] as VoidCallback,
+              );
+            },
           );
         },
       );
     },
   );
 }
+
   Widget _buildResponsiveSectionsGrid(bool useVerticalStack) {
     return BlocBuilder<BillBloc, BillState>(
       builder: (context, billState) {
@@ -666,26 +530,12 @@ Widget _buildResponsiveMetricGrid(bool useCondensedGrid) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => FinancialItemsListPage(
+                        type: FinancialType.bills,
                         title: 'Upcoming Bills',
                         totalLabel: 'Pending Total Sum',
                         totalAmount:
                             'ETB ${upcomingBills.fold(0.0, (s, b) => s + b.amount).toStringAsFixed(2)}',
-                        items: upcomingBills.map((bill) {
-                          return DashboardListItem(
-                            leadingWidget: CircleAvatar(
-                              child: Text(
-                                bill.organizationName.isNotEmpty
-                                    ? bill.organizationName[0]
-                                    : "?",
-                              ),
-                            ),
-                            title: bill.title,
-                            subtitle:
-                                "Due: ${bill.dueDate.toLocal().toString().split(' ')[0]}",
-                            amount: "ETB ${bill.amount}",
-                            amountColor: const Color(0xFFEF4444),
-                          );
-                        }).toList(),
+                        
                       ),
                     ),
                   );
@@ -715,25 +565,12 @@ Widget _buildResponsiveMetricGrid(bool useCondensedGrid) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => FinancialItemsListPage(
+                        type: FinancialType.subscriptions,
                         title: 'Active Subscriptions',
                         totalLabel: 'Monthly Commitment',
                         totalAmount:
                             'ETB ${activeSubscriptions.fold(0.0, (s, b) => s + b.amount).toStringAsFixed(2)}',
-                        items: activeSubscriptions.map((sub) {
-                          return DashboardListItem(
-                            leadingWidget: CircleAvatar(
-                              backgroundColor: Colors.black,
-                              child: Text(
-                                sub.name.isNotEmpty ? sub.name[0] : "?",
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            title: sub.name,
-                            subtitle: "Active • Monthly",
-                            amount: "ETB ${sub.amount}",
-                            amountColor: const Color(0xFF8B5CF6),
-                          );
-                        }).toList(),
+                        
                       ),
                     ),
                   );
@@ -790,55 +627,75 @@ Widget _buildResponsiveMetricGrid(bool useCondensedGrid) {
     );
   }
 
-  void _showMobileSettingsBottomSheet() {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: "Settings",
-      barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (context, _, __) {
-        return Align(
-          alignment: Alignment.centerRight,
-          child: Material(
-            color: Colors.transparent,
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height,
-              child: SettingsDrawerPanel(
-                userName: 'Dessalew Fentahun',
-                userEmail: 'dessalew@example.com',
-                planType: 'Premium Workspace',
-                profileImageUrl:
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb',
-                onClose: () {
-                  Navigator.of(context).pop();
-                },
-                onLogout: () async {
-                  // 1. Clear user data and authentication JWT token from SharedPreferences
-                  await SessionManager.logout();
 
-                  if (!context.mounted) return;
 
-                  // 2. Close the open slide-out settings panel first
-                  Navigator.of(context).pop();
+  String _getPlanType(UserEntity? user) {
+  if (user == null) return "Free Plan";
 
-                  // 3. Purge the route stack and kick the user out back to the Login Page
-                  context.go('/login');
-                },
-              ),
+  if (user.role == "organization") {
+    return "Organization Plan";
+  }
+
+  return "Personal Plan";
+}
+void _showMobileSettingsBottomSheet() async {
+  // 🔥 Always fetch latest user from session (not stale controller)
+  final user = await SessionManager.getUser();
+
+  if (!mounted) return;
+
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: "Settings",
+    barrierColor: Colors.black54,
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (context, _, __) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Material(
+          color: Colors.transparent,
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height,
+            child: SettingsDrawerPanel(
+              // =========================
+              // API DATA (CLEAN + SAFE)
+              // =========================
+              userName: user?.fullName ?? "Guest User",
+              userEmail: user?.email ?? "No Email Available",
+              planType: _getPlanType(user),
+              profileImageUrl: user?.profileImage ??
+                  'https://ui-avatars.com/api/?name=${Uri.encodeComponent(user?.fullName ?? "User")}',
+
+              onClose: () {
+                Navigator.of(context).pop();
+              },
+
+              onLogout: () async {
+                await SessionManager.logout();
+
+                if (!context.mounted) return;
+
+                Navigator.of(context).pop();
+                context.go('/login');
+              },
             ),
           ),
-        );
-      },
-      transitionBuilder: (context, animation, _, child) {
-        final tween = Tween(
-          begin: const Offset(1, 0),
-          end: Offset.zero,
-        ).chain(CurveTween(curve: Curves.easeInOut));
+        ),
+      );
+    },
+    transitionBuilder: (context, animation, _, child) {
+      final tween = Tween(
+        begin: const Offset(1, 0),
+        end: Offset.zero,
+      ).chain(CurveTween(curve: Curves.easeInOut));
 
-        return SlideTransition(position: animation.drive(tween), child: child);
-      },
-    );
-  }
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+  );
+}
 }

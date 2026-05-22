@@ -1,5 +1,7 @@
+import 'package:bill_subscription_notifier/core/network/socket/socket_service.dart';
 import 'package:bill_subscription_notifier/features/notifications/data/datasources/notification_remote_datasource.dart';
 import 'package:bill_subscription_notifier/features/notifications/data/repositories/notification_repository_impl.dart';
+import 'package:bill_subscription_notifier/features/notifications/data/repositories/socket_repository_impl.dart';
 import 'package:bill_subscription_notifier/features/notifications/domain/usecases/get_notifications.dart';
 import 'package:bill_subscription_notifier/features/notifications/domain/usecases/mark_notification_as_read.dart';
 import 'package:bill_subscription_notifier/features/notifications/presentation/bloc/notification_bloc.dart';
@@ -97,18 +99,25 @@ class MyApp extends StatelessWidget {
    NOTIFICATIONS BLOC
 ========================= */
 BlocProvider(
-  create: (_) => NotificationBloc(
-    GetNotifications(
-      NotificationRepositoryImpl(
-        NotificationRemoteDataSource(),
-      ),
-    ),
-    MarkNotificationAsRead(
-      NotificationRepositoryImpl(
-        NotificationRemoteDataSource(),
-      ),
-    ),
-  ),
+  create: (_) {
+    // =========================
+    // API LAYER
+    // =========================
+    final remote = NotificationRemoteDataSource();
+    final repo = NotificationRepositoryImpl(remote);
+
+    // =========================
+    // SOCKET LAYER
+    // =========================
+    final socketService = SocketService();
+    final socketRepo = SocketRepositoryImpl(socketService);
+
+    return NotificationBloc(
+      GetNotifications(repo),
+      MarkNotificationAsRead(repo),
+      socketRepo, // ✅ NEW REQUIRED ARGUMENT
+    );
+  },
 ),
 
         /* =========================

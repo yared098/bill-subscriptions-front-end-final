@@ -5,8 +5,6 @@ import 'package:bill_subscription_notifier/features/subscriptions/presentation/b
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-
-
 class TotalExpenseCard extends StatefulWidget {
   final VoidCallback? onTap;
 
@@ -26,30 +24,31 @@ class _TotalExpenseCardState extends State<TotalExpenseCard> {
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
 
+    // Theme Design Tokens
+    const primaryBlue = Color(0xFF2563EB);
+    const deepObsidian = Color(0xFF1E293B);
+
     return BlocBuilder<BillBloc, BillState>(
       builder: (context, billState) {
         return BlocBuilder<SubscriptionBloc, SubscriptionState>(
           builder: (context, subState) {
-
-            // ================= REAL DATA =================
+            // ================= REAL DATA BUSINESS PIPELINE =================
             double totalExpense = 0;
             int billCount = 0;
             int subscriptionCount = 0;
 
-            // BILLS
+            // BILLS ACCUMULATION
             if (billState is BillLoaded) {
               billCount = billState.bills.length;
-
               totalExpense += billState.bills.fold(
                 0,
                 (sum, bill) => sum + bill.amount,
               );
             }
 
-            // SUBSCRIPTIONS
+            // SUBSCRIPTIONS ACCUMULATION
             if (subState is SubscriptionLoaded) {
               subscriptionCount = subState.subscriptions.length;
-
               totalExpense += subState.subscriptions.fold(
                 0,
                 (sum, sub) => sum + sub.amount,
@@ -60,7 +59,7 @@ class _TotalExpenseCardState extends State<TotalExpenseCard> {
               onEnter: (_) => setState(() => _isHovered = true),
               onExit: (_) => setState(() => _isHovered = false),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOutCubic,
                 transform: _isHovered
                     ? (Matrix4.identity()..translate(0, -4, 0))
@@ -68,19 +67,16 @@ class _TotalExpenseCardState extends State<TotalExpenseCard> {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF2563EB), Color(0xFF7C3AED)],
+                    colors: [primaryBlue, deepObsidian],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF7C3AED)
-                          .withOpacity(_isHovered ? 0.3 : 0.15),
-                      blurRadius: _isHovered ? 24 : 16,
-                      offset: _isHovered
-                          ? const Offset(0, 12)
-                          : const Offset(0, 8),
+                      color: primaryBlue.withOpacity(_isHovered ? 0.24 : 0.12),
+                      blurRadius: _isHovered ? 28 : 16,
+                      offset: _isHovered ? const Offset(0, 12) : const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -88,27 +84,27 @@ class _TotalExpenseCardState extends State<TotalExpenseCard> {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: widget.onTap,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(24),
                     child: Padding(
                       padding: EdgeInsets.all(isSmallScreen ? 20 : 28),
                       child: Stack(
                         children: [
-                          // background icon
+                          // Background Geometric Ambient Shape Mask
                           Positioned(
-                            right: -10,
-                            bottom: -10,
+                            right: -15,
+                            bottom: -15,
                             child: AnimatedOpacity(
                               duration: const Duration(milliseconds: 200),
-                              opacity: _isHovered ? 0.25 : 0.12,
+                              opacity: _isHovered ? 0.22 : 0.08,
                               child: const Icon(
-                                Icons.stacked_line_chart_rounded,
-                                size: 140,
+                                Icons.analytics_rounded,
+                                size: 150,
                                 color: Colors.white,
                               ),
                             ),
                           ),
 
-                          // CONTENT
+                          // Foreground Layout Content
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -119,24 +115,28 @@ class _TotalExpenseCardState extends State<TotalExpenseCard> {
                                       'Total Monthly Expense',
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFFE2E8F0),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.3,
                                       ),
                                     ),
                                   ),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4),
+                                        horizontal: 10, vertical: 5),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
+                                      color: Colors.white.withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.08),
+                                      ),
                                     ),
                                     child: const Row(
                                       children: [
                                         CircleAvatar(
-                                          radius: 3,
-                                          backgroundColor: Colors.greenAccent,
+                                          radius: 3.5,
+                                          backgroundColor: Color(0xFF10B981), // Solid Emerald Green
                                         ),
                                         SizedBox(width: 6),
                                         Text(
@@ -144,7 +144,7 @@ class _TotalExpenseCardState extends State<TotalExpenseCard> {
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 10,
-                                            fontWeight: FontWeight.bold,
+                                            fontWeight: FontWeight.w700,
                                           ),
                                         ),
                                       ],
@@ -152,14 +152,12 @@ class _TotalExpenseCardState extends State<TotalExpenseCard> {
                                   )
                                 ],
                               ),
+                              const SizedBox(height: 10),
 
-                              const SizedBox(height: 12),
-
-                              // TOTAL EXPENSE
+                              // Total Numeric Layout Display
                               ConstrainedBox(
                                 constraints: BoxConstraints(
-                                  maxWidth:
-                                      MediaQuery.of(context).size.width * 0.6,
+                                  maxWidth: MediaQuery.of(context).size.width * 0.65,
                                 ),
                                 child: FittedBox(
                                   fit: BoxFit.scaleDown,
@@ -168,19 +166,19 @@ class _TotalExpenseCardState extends State<TotalExpenseCard> {
                                     "ETB ${totalExpense.toStringAsFixed(2)}",
                                     style: const TextStyle(
                                       color: Colors.white,
-                                      fontSize: 36,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 38,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.8,
                                     ),
                                   ),
                                 ),
                               ),
-
                               SizedBox(height: isSmallScreen ? 24 : 32),
 
-                              // BADGES
+                              // Metadata Info Badges Layout Block
                               Wrap(
-                                spacing: 16,
-                                runSpacing: 12,
+                                spacing: 12,
+                                runSpacing: 10,
                                 children: [
                                   _buildBadge(
                                     billCount.toString(),
@@ -211,31 +209,35 @@ class _TotalExpenseCardState extends State<TotalExpenseCard> {
 
   Widget _buildBadge(String count, String label, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.12),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.white70),
+          Icon(icon, size: 15, color: const Color(0xFFCBD5E1)),
           const SizedBox(width: 8),
           Text(
             count,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+            style: const TextStyle(
+              color: Color(0xFF94A3B8),
               fontSize: 12,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

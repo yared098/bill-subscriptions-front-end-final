@@ -87,7 +87,6 @@ class _PaymentViewState extends State<_PaymentView> {
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBars.primary(
   title: "Payment Hub",
-  onBack: () => Navigator.pop(context),
   actions: [
     IconButton(
       icon: const Icon(Icons.history_rounded, color: Color(0xFF0F172A)),

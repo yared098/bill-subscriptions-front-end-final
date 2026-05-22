@@ -1,51 +1,52 @@
 class UserEntity {
   final String id;
   final String fullName;
+  final String username;
   final String email;
   final String role;
 
-  // OPTIONAL (based on your backend)
   final String? phone;
   final String? profileImage;
-  final bool? emailVerified;
+  final String? faydaId;
+  final bool? isFaydaVerified;
 
   UserEntity({
     required this.id,
     required this.fullName,
+    required this.username,
     required this.email,
     required this.role,
     this.phone,
     this.profileImage,
-    this.emailVerified,
+    this.faydaId,
+    this.isFaydaVerified,
   });
 
-  // =========================
-  // FROM JSON
-  // =========================
   factory UserEntity.fromJson(Map<String, dynamic> json) {
     return UserEntity(
       id: json['_id'] ?? json['id'] ?? '',
       fullName: json['fullName'] ?? '',
+      username: json['username'] ?? '',
       email: json['email'] ?? '',
       role: json['role'] ?? 'user',
       phone: json['phone'],
       profileImage: json['profileImage'],
-      emailVerified: json['emailVerified'],
+      faydaId: json['faydaId'],
+      isFaydaVerified: json['isFaydaVerified'],
     );
   }
 
-  // =========================
-  // TO JSON
-  // =========================
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'fullName': fullName,
+      'username': username,
       'email': email,
       'role': role,
       'phone': phone,
       'profileImage': profileImage,
-      'emailVerified': emailVerified,
+      'faydaId': faydaId,
+      'isFaydaVerified': isFaydaVerified,
     };
   }
 }

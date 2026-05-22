@@ -37,21 +37,25 @@ Future<bool> login(String email, String password) async {
   // =========================
   // REGISTER
   // =========================
-  Future<bool> register({
-    required String fullName,
-    required String email,
-    required String password,
-    required String role,
-  }) async {
-    final res = await repo.register(
-      fullName: fullName,
-      email: email,
-      password: password,
-      role: role,
-    );
+ Future<bool> register({
+  required String fullName,
+  required String username,
+  required String email,
+  required String phone,
+  required String faydaId,
+  required String password,
+}) async {
+  final res = await repo.register(
+    fullName: fullName,
+    username: username,
+    email: email,
+    phone: phone,
+    faydaId: faydaId,
+    password: password,
+  );
 
-    return res["success"] == true;
-  }
+  return res["success"] == true;
+}
 
   // =========================
   // 🔥 LOAD USER PROFILE (NEW)
