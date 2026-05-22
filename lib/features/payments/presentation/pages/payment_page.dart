@@ -40,9 +40,17 @@ class _PaymentView extends StatefulWidget {
 }
 
 class _PaymentViewState extends State<_PaymentView> {
-  final TextEditingController _amountController = TextEditingController(text: "100");
+  final TextEditingController _amountController = TextEditingController(text: "299");
   String _selectedProvider = "chapa"; // Default selection
-  String _selectedPurpose = "bill";
+  String _selectedPurpose = "subscriptions";
+  String _selectedTier = "premium"; // Default tier matching initial 299 ETB
+
+  // Membership Tiers Configuration
+  final List<Map<String, dynamic>> _membershipTiers = [
+    {"id": "premium", "title": "Premium", "price": 299, "icon": Icons.star_border_rounded, "color": Color(0xFF3B82F6)},
+    {"id": "golden", "title": "Golden", "price": 599, "icon": Icons.workspace_premium_rounded, "color": Color(0xFFEAB308)},
+    {"id": "platinum", "title": "Platinum", "price": 999, "icon": Icons.diamond_rounded, "color": Color(0xFF0EA5E9)},
+  ];
 
   final List<Map<String, dynamic>> _providers = [
     {"id": "chapa", "title": "Chapa", "icon": Icons.account_balance_wallet, "color": Color(0xFF2563EB)},
@@ -50,7 +58,7 @@ class _PaymentViewState extends State<_PaymentView> {
     {"id": "bank", "title": "Bank Transfer", "icon": Icons.account_balance, "color": Color(0xFF7C3AED)},
   ];
 
-  final List<int> _quickAmounts = [50, 100, 250, 500];
+  final List<int> _quickAmounts = [100, 299, 599, 999];
 
   @override
   void dispose() {
@@ -76,7 +84,7 @@ class _PaymentViewState extends State<_PaymentView> {
         amount: _currentAmount,
         provider: _selectedProvider,
         purpose: _selectedPurpose,
-        token: widget.token, // Correctly passing the token here now
+        token: widget.token,
       ),
     );
   }
@@ -86,14 +94,14 @@ class _PaymentViewState extends State<_PaymentView> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBars.primary(
-  title: "Payment Hub",
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.history_rounded, color: Color(0xFF0F172A)),
-      onPressed: () {},
-    )
-  ],
-),
+        title: "System Memebership ",
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history_rounded, color: Color(0xFF0F172A)),
+            onPressed: () {},
+          )
+        ],
+      ),
       body: BlocConsumer<PaymentBloc, PaymentState>(
         listener: (context, state) {
           if (state is PaymentSuccess) {
@@ -103,7 +111,12 @@ class _PaymentViewState extends State<_PaymentView> {
                   children: [
                     const Icon(Icons.check_circle, color: Colors.white),
                     const SizedBox(width: 12),
-                    Text("Payment of \$$_currentAmount initiated via $_selectedProvider"),
+                    Expanded(
+                      child: Text(
+                        "Payment of ${_currentAmount.toStringAsFixed(2)} ETB initiated via $_selectedProvider",
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
                 backgroundColor: const Color(0xFF10B981),
@@ -114,7 +127,6 @@ class _PaymentViewState extends State<_PaymentView> {
 
             if (state.payment.checkoutUrl != null) {
               debugPrint("Checkout URL: ${state.payment.checkoutUrl}");
-              // Optional: Open the URL using a library like url_launcher
             }
           } else if (state is PaymentFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -140,55 +152,81 @@ class _PaymentViewState extends State<_PaymentView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ================= HERO GRADIENT CARD =================
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [Color(0xFF2563EB), Color(0xFF4F46E5), Color(0xFF7C3AED)],
-                              ),
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF2563EB).withOpacity(0.25),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Secure Transactions",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  "Pay your bills, settle subscriptions, or execute direct bank transfers instantly.",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
+                          // ================= MEMBERSHIP PLANS (NEW SECTION) =================
+                          const Text(
+                            "Select Membership Plan",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
                             ),
                           ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: _membershipTiers.map((tier) {
+                              final isSelected = _selectedTier == tier["id"];
+                              final Color tierColor = tier["color"];
 
-                          const SizedBox(height: 28),
+                              return Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? tierColor.withOpacity(0.06) : Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: isSelected ? tierColor : const Color(0xFFE2E8F0),
+                                        width: isSelected ? 2 : 1,
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedTier = tier["id"];
+                                          _amountController.text = tier["price"].toString();
+                                          _selectedPurpose = "subscriptions";
+                                        });
+                                      },
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 4.0),
+                                        child: Column(
+                                          children: [
+                                            Icon(tier["icon"], color: isSelected ? tierColor : const Color(0xFF94A3B8), size: 26),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              tier["title"],
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                                color: isSelected ? tierColor : const Color(0xFF1E293B),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              "${tier["price"]} ETB",
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF64748B),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+
+                          const SizedBox(height: 24),
 
                           // ================= AMOUNT INPUT SECTION =================
                           const Text(
-                            "Enter Amount",
+                            "Enter Amount Manually",
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -197,7 +235,7 @@ class _PaymentViewState extends State<_PaymentView> {
                           ),
                           const SizedBox(height: 12),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
@@ -208,18 +246,24 @@ class _PaymentViewState extends State<_PaymentView> {
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
                               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))],
                               style: const TextStyle(
-                                fontSize: 28,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF0F172A),
                               ),
                               decoration: const InputDecoration(
-                                prefixText: "\$ ",
-                                prefixStyle: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8)),
+                                suffixText: " ETB",
+                                suffixStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8)),
                                 border: InputBorder.none,
                                 hintText: "0.00",
                                 hintStyle: TextStyle(color: Color(0xFFCBD5E1)),
                               ),
-                              onChanged: (val) => setState(() {}),
+                              onChanged: (val) {
+                                setState(() {
+                                  // Reset selected membership badge visual highlight if user enters custom values
+                                  final match = _membershipTiers.any((t) => t["price"].toString() == val.trim());
+                                  if (!match) _selectedTier = "";
+                                });
+                              },
                             ),
                           ),
 
@@ -236,12 +280,17 @@ class _PaymentViewState extends State<_PaymentView> {
                                 final amount = _quickAmounts[index];
                                 final isSelected = _currentAmount == amount;
                                 return ChoiceChip(
-                                  label: Text("\$$amount"),
+                                  label: Text("$amount ETB"),
                                   selected: isSelected,
                                   onSelected: (selected) {
                                     if (selected) {
                                       setState(() {
                                         _amountController.text = amount.toString();
+                                        final matchedTier = _membershipTiers.firstWhere(
+                                          (t) => t["price"] == amount,
+                                          orElse: () => {"id": ""},
+                                        );
+                                        _selectedTier = matchedTier["id"];
                                       });
                                     }
                                   },
@@ -262,7 +311,7 @@ class _PaymentViewState extends State<_PaymentView> {
                             ),
                           ),
 
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 24),
 
                           // ================= SELECT PROVIDER SECTION =================
                           const Text(
@@ -345,7 +394,7 @@ class _PaymentViewState extends State<_PaymentView> {
                             }).toList(),
                           ),
 
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 24),
 
                           // ================= PURPOSE / ACTION TYPE =================
                           const Text(
@@ -358,17 +407,17 @@ class _PaymentViewState extends State<_PaymentView> {
                           ),
                           const SizedBox(height: 12),
                           _buildPurposeOption(
-                            title: "Standard Bill Payment",
-                            subtitle: "Utilities, logistics, or custom orders",
-                            icon: Icons.receipt_long,
-                            id: "bill",
+                            title: "Renew Subscriptions / Membership Plans",
+                            subtitle: "Access features across Premium, Golden, or Platinum tiers",
+                            icon: Icons.autorenew,
+                            id: "subscriptions",
                           ),
                           const SizedBox(height: 10),
                           _buildPurposeOption(
-                            title: "Renew Subscriptions",
-                            subtitle: "Auto-renew monthly recurring platform charges",
-                            icon: Icons.autorenew,
-                            id: "subscriptions",
+                            title: "Standard Bill Payment",
+                            subtitle: "Utilities, logs, or miscellaneous backend billing balances",
+                            icon: Icons.receipt_long,
+                            id: "bill",
                           ),
                         ],
                       ),
@@ -394,7 +443,7 @@ class _PaymentViewState extends State<_PaymentView> {
                       child: ElevatedButton(
                         onPressed: isLoading ? null : () => _submitPayment(context),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0F172A), // Dark elegant primary action button
+                          backgroundColor: const Color(0xFF0F172A),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -408,7 +457,7 @@ class _PaymentViewState extends State<_PaymentView> {
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                               )
                             : Text(
-                                "Proceed with Pay \$$_currentAmount",
+                                "Pay ${_currentAmount.toStringAsFixed(2)} ETB",
                                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                       ),

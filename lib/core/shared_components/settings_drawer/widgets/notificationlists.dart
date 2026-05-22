@@ -1,3 +1,5 @@
+import 'package:bill_subscription_notifier/core/network/socket/socket_service.dart';
+import 'package:bill_subscription_notifier/features/auth/core/session/session_manager.dart';
 import 'package:bill_subscription_notifier/features/notifications/domain/entities/notification_entity.dart';
 import 'package:bill_subscription_notifier/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:bill_subscription_notifier/features/notifications/presentation/bloc/notification_event.dart';
@@ -27,15 +29,48 @@ class _NotificationsPanelState extends State<NotificationsPanel> {
   static const Color textDark = Color(0xFF0F172A);
   static const Color textMuted = Color(0xFF64748B);
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<NotificationBloc>().add(LoadNotifications());
-      }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     if (mounted) {
+  //       context.read<NotificationBloc>().add(LoadNotifications());
+  //     }
+  //   });
+  // }
+  void _initSocket(NotificationBloc bloc) {
+  final socket = context.read<SocketService>();
+
+  final user = SessionManager.getUser();
+
+  user.then((u) {
+    if (u == null) return;
+
+    socket.connect(u.id);
+
+    socket.listenNotifications((data) {
+      print("🔔 SOCKET EVENT RECEIVED: $data");
+
+      bloc.add(NewNotificationReceivedEvent(data));
     });
-  }
+  });
+}
+  @override
+void initState() {
+  super.initState();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+
+    final bloc = context.read<NotificationBloc>();
+
+    // 1. Load initial notifications
+    bloc.add(LoadNotifications());
+
+    // 2. START SOCKET LISTENER 🔥
+    _initSocket(bloc);
+  });
+}
 
   @override
   Widget build(BuildContext context) {

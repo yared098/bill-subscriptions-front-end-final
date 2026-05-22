@@ -1,3 +1,4 @@
+import 'package:bill_subscription_notifier/core/network/socket/notificationservice.dart';
 import 'package:bill_subscription_notifier/core/network/socket/socket_service.dart';
 import 'package:bill_subscription_notifier/features/notifications/data/datasources/notification_remote_datasource.dart';
 import 'package:bill_subscription_notifier/features/notifications/data/repositories/notification_repository_impl.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:bill_subscription_notifier/core/router/app_router.dart';
 import 'package:bill_subscription_notifier/features/auth/core/session/session_manager.dart';
+import 'package:provider/provider.dart';
 
 /* =========================
    OVERVIEW
@@ -45,6 +47,9 @@ import 'features/payments/data/datasources/payment_remote_datasource.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+   await LocalNotificationService.init(); // 🔥 ADD THIS
+
+  await requestNotificationPermission(); // 🔥 ADD THIS
   await SessionManager.init();
 
   runApp(const MyApp());
@@ -55,88 +60,94 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        /* =========================
-           OVERVIEW BLOC
-        ========================= */
-        BlocProvider(
-          create: (_) => OverviewBloc(
-            GetOverview(
-              OverviewRepositoryImpl(
-                OverviewRemoteDataSource(),
-              ),
-            ),
-          ),
-        ),
-
-        /* =========================
-           BILLS BLOC
-        ========================= */
-        BlocProvider(
-          create: (_) => BillBloc(
-            GetBills(
-              BillRepositoryImpl(
-                BillRemoteDataSource(),
-              ),
-            ),
-          ),
-        ),
-
-        /* =========================
-           SUBSCRIPTIONS BLOC
-        ========================= */
-        BlocProvider(
-          create: (_) => SubscriptionBloc(
-            GetSubscriptions(
-              SubscriptionRepositoryImpl(
-                SubscriptionRemoteDataSource(),
-              ),
-            ),
-          ),
-        ),
-        /* =========================
-   NOTIFICATIONS BLOC
-========================= */
-BlocProvider(
-  create: (_) {
+     
+   return MultiBlocProvider(
+  providers: [
     // =========================
-    // API LAYER
+    // SOCKET SERVICE (ADD THIS)
     // =========================
-    final remote = NotificationRemoteDataSource();
-    final repo = NotificationRepositoryImpl(remote);
+    Provider<SocketService>(
+      create: (_) => SocketService(),
+      dispose: (_, socket) => socket.disconnect(),
+    ),
 
     // =========================
-    // SOCKET LAYER
+    // OVERVIEW BLOC
     // =========================
-    final socketService = SocketService();
-    final socketRepo = SocketRepositoryImpl(socketService);
-
-    return NotificationBloc(
-      GetNotifications(repo),
-      MarkNotificationAsRead(repo),
-      socketRepo, // ✅ NEW REQUIRED ARGUMENT
-    );
-  },
-),
-
-        /* =========================
-           PAYMENTS BLOC
-        ========================= */
-        BlocProvider(
-          create: (_) => PaymentBloc(
-            CreatePayment(
-              PaymentRepositoryImpl(
-                PaymentRemoteDataSource(),
-              ),
-            ),
+    BlocProvider(
+      create: (_) => OverviewBloc(
+        GetOverview(
+          OverviewRepositoryImpl(
+            OverviewRemoteDataSource(),
           ),
         ),
-      ],
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        routerConfig: AppRouter.router,
       ),
-    );
+    ),
+
+    // =========================
+    // BILLS BLOC
+    // =========================
+    BlocProvider(
+      create: (_) => BillBloc(
+        GetBills(
+          BillRepositoryImpl(
+            BillRemoteDataSource(),
+          ),
+        ),
+      ),
+    ),
+
+    // =========================
+    // SUBSCRIPTIONS BLOC
+    // =========================
+    BlocProvider(
+      create: (_) => SubscriptionBloc(
+        GetSubscriptions(
+          SubscriptionRepositoryImpl(
+            SubscriptionRemoteDataSource(),
+          ),
+        ),
+      ),
+    ),
+
+    // =========================
+    // NOTIFICATIONS BLOC
+    // =========================
+    BlocProvider(
+      create: (context) {
+        final remote = NotificationRemoteDataSource();
+        final repo = NotificationRepositoryImpl(remote);
+
+        final socketService = SocketRepositoryImpl(
+          context.read<SocketService>(),
+        );
+
+        return NotificationBloc(
+          GetNotifications(repo),
+          MarkNotificationAsRead(repo),
+          socketService,
+        );
+      },
+    ),
+
+    // =========================
+    // PAYMENTS BLOC
+    // =========================
+    BlocProvider(
+      create: (_) => PaymentBloc(
+        CreatePayment(
+          PaymentRepositoryImpl(
+            PaymentRemoteDataSource(),
+          ),
+        ),
+      ),
+    ),
+  ],
+  child: MaterialApp.router(
+    debugShowCheckedModeBanner: false,
+    routerConfig: AppRouter.router,
+  ),
+);
   }
+
 }

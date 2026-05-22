@@ -26,3 +26,9 @@ class NewNotificationReceivedEvent extends NotificationEvent {
 }
 
 class DisconnectSocketEvent extends NotificationEvent {}
+
+class NewNotificationReceived extends NotificationEvent {
+  final dynamic data;
+
+  NewNotificationReceived(this.data);
+}
