@@ -29,15 +29,6 @@ class _NotificationsPanelState extends State<NotificationsPanel> {
   static const Color textDark = Color(0xFF0F172A);
   static const Color textMuted = Color(0xFF64748B);
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     if (mounted) {
-  //       context.read<NotificationBloc>().add(LoadNotifications());
-  //     }
-  //   });
-  // }
   void _initSocket(NotificationBloc bloc) {
   final socket = context.read<SocketService>();
 
@@ -49,7 +40,7 @@ class _NotificationsPanelState extends State<NotificationsPanel> {
     socket.connect(u.id);
 
     socket.listenNotifications((data) {
-      print("🔔 SOCKET EVENT RECEIVED: $data");
+      // print("🔔 SOCKET EVENT RECEIVED: $data");
 
       bloc.add(NewNotificationReceivedEvent(data));
     });
